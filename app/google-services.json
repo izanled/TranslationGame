@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "1083104746655",
+    "firebase_url": "https://translationgame-583a5.firebaseio.com",
+    "project_id": "translationgame-583a5",
+    "storage_bucket": "translationgame-583a5.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1083104746655:android:13ba6f26f6c89ca3",
+        "android_client_info": {
+          "package_name": "com.izanled.translation.game"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1083104746655-nne881m2b1hq51f5rjjqmdpph7g2r9vn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.izanled.translation.game",
+            "certificate_hash": "b8d6eab39ef8e1f320511c101204d9fbee88de3b"
+          }
+        },
+        {
+          "client_id": "1083104746655-ulqsegb17gsscgt8u8t83odjie1e5uvp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCCyICrBiI2wqHknevIMaeDCfgYgKw08BA"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1083104746655-ulqsegb17gsscgt8u8t83odjie1e5uvp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

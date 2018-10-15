@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/lay_action_btn"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <ImageButton
+        android:id="@+id/btn_screen_shot"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:adjustViewBounds="true"
+        android:background="@drawable/selector_action_btn"
+        android:scaleType="centerCrop"
+        android:src="@android:drawable/ic_menu_camera" />
+
+    <ImageButton
+        android:id="@+id/btn_capture"
+        android:layout_width="30dp"
+        android:layout_height="33dp"
+        android:adjustViewBounds="true"
+        android:background="@drawable/selector_action_btn"
+        android:scaleType="centerCrop"
+        android:src="@android:drawable/ic_menu_search" />
+
+    <ImageButton
+        android:id="@+id/btn_chat"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:adjustViewBounds="true"
+        android:background="@drawable/selector_action_btn"
+        android:scaleType="fitCenter"
+        android:src="@android:drawable/ic_menu_edit" />
+
+    <ImageButton
+        android:id="@+id/btn_last_text"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:adjustViewBounds="true"
+        android:background="@drawable/selector_action_btn"
+        android:scaleType="centerCrop"
+        android:src="@android:drawable/ic_menu_rotate" />
+
+    <ImageButton
+        android:id="@+id/btn_close"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:adjustViewBounds="true"
+        android:background="@drawable/selector_action_btn"
+        android:scaleType="centerCrop"
+        android:src="@android:drawable/ic_menu_close_clear_cancel" />
+
+    <ImageButton
+        android:id="@+id/btn_exit"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:adjustViewBounds="true"
+        android:background="@drawable/selector_action_btn"
+        android:scaleType="centerCrop"
+        android:src="@android:drawable/ic_delete" />
+
+    <ImageButton
+        android:id="@+id/btn_arrow"
+        android:layout_width="match_parent"
+        android:layout_height="15dp"
+        android:adjustViewBounds="true"
+        android:background="@drawable/selector_action_btn"
+        android:scaleType="fitCenter"
+        android:src="@android:drawable/arrow_down_float" />
+
+</LinearLayout>
