@@ -47,6 +47,8 @@ dependencies {
     implementation 'com.google.firebase:firebase-ads:17.0.0'
     implementation 'com.google.firebase:firebase-firestore:17.1.1'
     implementation 'com.firebaseui:firebase-ui-auth:4.2.0'
+    // Add dependency
+    implementation 'com.crashlytics.sdk.android:crashlytics:2.9.5'
 
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
