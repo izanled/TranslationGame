@@ -32,6 +32,8 @@ public class CommonData {
     private String mTransferTargetImg = "img";
     private String mTransferTargetTxt = "txt";
 
+
+
     /**
      * CommonData 인스턴스 리턴
      * @return CommonData

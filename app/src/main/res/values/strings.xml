@@ -11,6 +11,7 @@
     <string name="msg_fail_login">로그인에 실패했습니다. 다시 시도해주세요.</string>
     <string name="msg_not_found_id">계정 정보를 찾지 못했습니다. 다시 시도해주세요.</string>
     <string name="msg_fail_create_id">회원가입에 실패했습니다. 다시 시도해주세요.</string>
+    <string name="need_login">로그인 하셔야 서비스를 이용하실 수 있습니다.</string>
 
     // 메인화면
     <string name="remaining_point">잔여 포인트</string>

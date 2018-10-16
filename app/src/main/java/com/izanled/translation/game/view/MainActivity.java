@@ -1,7 +1,5 @@
 package com.izanled.translation.game.view;
 
-import android.app.Activity;
-import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -35,6 +33,8 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.firebase.ui.auth.AuthUI;
+import com.firebase.ui.auth.IdpResponse;
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
@@ -43,8 +43,11 @@ import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.reward.RewardItem;
 import com.google.android.gms.ads.reward.RewardedVideoAd;
 import com.google.android.gms.ads.reward.RewardedVideoAdListener;
+import com.google.android.gms.common.SignInButton;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreSettings;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.izanled.translation.game.R;
 import com.izanled.translation.game.common.CommonData;
 import com.izanled.translation.game.data.UserData;
@@ -58,6 +61,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -66,7 +71,9 @@ import butterknife.OnClick;
 public class MainActivity extends AppCompatActivity implements RewardedVideoAdListener {
     private static final String TAG = MainActivity.class.getName();
 
-    private static final int REQUEST_CODE = 100;
+    private static final int RC_PROJECTION = 100;
+    static final int RC_SIGN_IN = 123;
+    List<AuthUI.IdpConfig> providers = null;
     private static String STORE_DIRECTORY;
     private static final String SCREENCAP_NAME = "screencap";
     private static final int VIRTUAL_DISPLAY_FLAGS = DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY | DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC;
@@ -88,6 +95,7 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
     private InterstitialAd mInterstitialAd;
     private RewardedVideoAd mRewardedVideoAd;
     private FirebaseFirestore db;
+    FirebaseUser user;
 
     private int point = 0;
 
@@ -101,12 +109,14 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
         initAdMob();
         db = FirebaseFirestore.getInstance();
         mProjectionManager = (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+        user = FirebaseAuth.getInstance().getCurrentUser();
 
-        db.collection(CommonData.COLLECTION_USERS).document(CommonData.getInstance().getCurUser().get_id()).addSnapshotListener((documentSnapshot, e) -> {
-            CommonData.getInstance().setCurUser(documentSnapshot.toObject(UserData.class));
-            CommonData.getInstance().getCurUser().set_id(documentSnapshot.getId());
-            tv_point.setText(String.valueOf(CommonData.getInstance().getCurUser().getPoint()) + " P");
-        });
+        if(user == null){
+            providers = Arrays.asList(new AuthUI.IdpConfig.GoogleBuilder().build());
+            startActivityForResult(AuthUI.getInstance().createSignInIntentBuilder().setAvailableProviders(providers).build(), RC_SIGN_IN);
+        }else{
+            getUserData(user.getEmail());
+        }
 
         new Thread() {
             @Override
@@ -306,7 +316,7 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
     @Override
     protected void onResume() {
         mRewardedVideoAd.resume(this);
-        if(isServiceRunningCheck())
+        if(CommonData.getInstance().isStarted())
             btn_start.setText(R.string.end);
         else
             btn_start.setText(R.string.start);
@@ -418,59 +428,98 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_CODE) {
-            sMediaProjection = mProjectionManager.getMediaProjection(resultCode, data);
+        try {
+            if (requestCode == RC_PROJECTION) {
+                sMediaProjection = mProjectionManager.getMediaProjection(resultCode, data);
 
-            if (sMediaProjection != null) {
-                File externalFilesDir = getExternalFilesDir(null);
-                if (externalFilesDir != null) {
-                    STORE_DIRECTORY = externalFilesDir.getAbsolutePath() + "/screenshots/";
-                    File storeDirectory = new File(STORE_DIRECTORY);
-                    if (!storeDirectory.exists()) {
-                        boolean success = storeDirectory.mkdirs();
-                        if (!success) {
-                            Log.e(TAG, "failed to create file storage directory.");
-                            return;
+                if (sMediaProjection != null) {
+                    File externalFilesDir = getExternalFilesDir(null);
+                    if (externalFilesDir != null) {
+                        STORE_DIRECTORY = externalFilesDir.getAbsolutePath() + "/screenshots/";
+                        File storeDirectory = new File(STORE_DIRECTORY);
+                        if (!storeDirectory.exists()) {
+                            boolean success = storeDirectory.mkdirs();
+                            if (!success) {
+                                Log.e(TAG, "failed to create file storage directory.");
+                                return;
+                            }
                         }
+                    } else {
+                        Log.e(TAG, "failed to create file storage directory, getExternalFilesDir is null.");
+                        return;
                     }
+
+                    // display metrics
+                    DisplayMetrics metrics = getResources().getDisplayMetrics();
+                    mDensity = metrics.densityDpi;
+                    mDisplay = getWindowManager().getDefaultDisplay();
+
+                    // create virtual display depending on device width / height
+                    //if(CommonData.getInstance().isStarted())
+                    createVirtualDisplay();
+
+                    // register orientation change callback
+                    mOrientationChangeCallback = new OrientationChangeCallback(this);
+                    if (mOrientationChangeCallback.canDetectOrientation()) {
+                        mOrientationChangeCallback.enable();
+                    }
+
+                    // register media projection stop callback
+                    sMediaProjection.registerCallback(new MediaProjectionStopCallback(), mHandler);
+                }
+            }else if (requestCode == RC_SIGN_IN) {
+                IdpResponse response = IdpResponse.fromResultIntent(data);
+
+                if (resultCode == RESULT_OK) {
+                    // Successfully signed in
+                    user = FirebaseAuth.getInstance().getCurrentUser();
+
+                    db.collection(CommonData.COLLECTION_USERS).whereEqualTo(CommonData.FIELD_EMAIL, user.getEmail()).get().addOnCompleteListener(task -> {
+                        if(task.isSuccessful()){
+                            UserData sing_user = null;
+                            for (QueryDocumentSnapshot document : task.getResult()){
+                                sing_user = document.toObject(UserData.class);
+                                sing_user.set_id(document.getId());
+                                CommonData.getInstance().setCurUser(sing_user);
+                            }
+                            if(sing_user == null){
+                                // 신규유저
+                                newUserCrate(user.getEmail());
+                            }else{
+                                ToastManager.getInstance().showLongTosat(user.getEmail()+ " "+ getString(R.string.msg_login_id));
+                                startActivity(new Intent(MainActivity.this, MainActivity.class));
+                                finish();
+                            }
+                        }else{
+                            ToastManager.getInstance().showLongTosat(getString(R.string.msg_not_found_id));
+                        }
+                    });
+
+                    // ...
                 } else {
-                    Log.e(TAG, "failed to create file storage directory, getExternalFilesDir is null.");
-                    return;
+                    ToastManager.getInstance().showLongTosat(getString(R.string.msg_fail_login));
+                    //response.getError().printStackTrace();
+                    //Log.d(TAG, "에러 코드 : " + response.getError().getErrorCode());
+                    // Sign in failed. If response is null the user canceled the
+                    // sign-in flow using the back button. Otherwise check
+                    // response.getError().getErrorCode() and handle the error.
+                    // ...
                 }
-
-                // display metrics
-                DisplayMetrics metrics = getResources().getDisplayMetrics();
-                mDensity = metrics.densityDpi;
-                mDisplay = getWindowManager().getDefaultDisplay();
-
-                // create virtual display depending on device width / height
-                //if(CommonData.getInstance().isStarted())
-                createVirtualDisplay();
-
-                // register orientation change callback
-                mOrientationChangeCallback = new OrientationChangeCallback(this);
-                if (mOrientationChangeCallback.canDetectOrientation()) {
-                    mOrientationChangeCallback.enable();
-                }
-
-                // register media projection stop callback
-                sMediaProjection.registerCallback(new MediaProjectionStopCallback(), mHandler);
             }
+        }catch (Exception e){
+            e.printStackTrace();
         }
     }
 
     /****************************************** UI Widget Callbacks *******************************/
     public void startProjection() {
-        startActivityForResult(mProjectionManager.createScreenCaptureIntent(), REQUEST_CODE);
+        startActivityForResult(mProjectionManager.createScreenCaptureIntent(), RC_PROJECTION);
     }
 
     private void stopProjection() {
-        mHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (sMediaProjection != null) {
-                    sMediaProjection.stop();
-                }
+        mHandler.post(() -> {
+            if (sMediaProjection != null) {
+                sMediaProjection.stop();
             }
         });
     }
@@ -505,50 +554,83 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
         alertDialog.show();
     }
 
-    /**
-     * 서비스 유무 체크
-     * @return
-     */
-    public boolean isServiceRunningCheck() {
-        ActivityManager manager = (ActivityManager) this.getSystemService(Activity.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE))
-            if ("com.izanled.translation.game.service.TranslationService".equals(service.service.getClassName()))
-                return true;
+    public void getUserData(String email){
+        db.collection(CommonData.COLLECTION_USERS).whereEqualTo(CommonData.FIELD_EMAIL, email).get().addOnCompleteListener(task -> {
+            if(task.isSuccessful()){
+                UserData sing_user = null;
+                for (QueryDocumentSnapshot document : task.getResult()){
+                    sing_user = document.toObject(UserData.class);
+                    sing_user.set_id(document.getId());
+                    CommonData.getInstance().setCurUser(sing_user);
+                }
+                if(sing_user != null){
+                    ToastManager.getInstance().showLongTosat(email+ " "+ getString(R.string.msg_login_id));
 
-        return false;
+                    db.collection(CommonData.COLLECTION_USERS).document(CommonData.getInstance().getCurUser().get_id()).addSnapshotListener((documentSnapshot, e) -> {
+                        CommonData.getInstance().setCurUser(documentSnapshot.toObject(UserData.class));
+                        CommonData.getInstance().getCurUser().set_id(documentSnapshot.getId());
+                        tv_point.setText(String.valueOf(CommonData.getInstance().getCurUser().getPoint()) + " P");
+                    });
+
+                    btn_sign.setVisibility(View.GONE);
+                }
+            }else{
+                ToastManager.getInstance().showLongTosat(getString(R.string.msg_not_found_id));
+            }
+        });
     }
 
+    public void newUserCrate(String email){
+        UserData newUser = new UserData(email, 300);
+        db.collection(CommonData.COLLECTION_USERS).document().set(newUser).addOnCompleteListener(task -> {
+            if (task.isSuccessful()){
+                getUserData(email);
+            }else{
+                ToastManager.getInstance().showLongTosat(getString(R.string.msg_fail_create_id));
+            }
+        });
+    }
 
     @OnClick({R.id.btn_start, R.id.btn_reward})
     public void OnClick(View view){
         switch (view.getId()){
             case R.id.btn_start:
-                if(isServiceRunningCheck()){
-                    // 서비스 실행 중 - 종료 행동
-                    btn_start.setText(R.string.end);
-                    ToastManager.getInstance().showShortTosat(getString(R.string.end_service));
-                    stopService(new Intent(this, TranslationService.class));    //서비스 종료
-                    mInterstitialAd.show();
-                }else{
-                    // 서비스 미 실행 중 - 실행 행동
-                    btn_start.setText(R.string.start);
-                    ToastManager.getInstance().showShortTosat(getString(R.string.start_service));
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-                        Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()));
-                        startActivityForResult(intent, REQ_CODE_OVERLAY_PERMISSION);
-                    } else {
-                        startService(new Intent(this, TranslationService.class));    //서비스 시작
-                        startProjection();
+                if(user != null){
+                    if(CommonData.getInstance().isStarted()){
+                        // 서비스 실행 중 - 종료 행동
+                        CommonData.getInstance().setStarted(false);
+                        btn_start.setText(R.string.start);
+                        ToastManager.getInstance().showShortTosat(getString(R.string.end_service));
+                        stopService(new Intent(this, TranslationService.class));    //서비스 종료
+                        mInterstitialAd.show();
+                    }else{
+                        // 서비스 미 실행 중 - 실행 행동
+                        CommonData.getInstance().setStarted(true);
+                        btn_start.setText(R.string.end);
+                        ToastManager.getInstance().showShortTosat(getString(R.string.start_service));
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+                            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()));
+                            startActivityForResult(intent, REQ_CODE_OVERLAY_PERMISSION);
+                        } else {
+                            startService(new Intent(this, TranslationService.class));    //서비스 시작
+                            startProjection();
+                        }
                     }
+                }else{
+                    ToastManager.getInstance().showShortTosat(getString(R.string.need_login));
                 }
 
                 break;
             case R.id.btn_reward:
                 mRewardedVideoAd.show();
                 break;
+            case R.id.btn_sign:
+                startActivityForResult(AuthUI.getInstance().createSignInIntentBuilder().setAvailableProviders(providers).build(), RC_SIGN_IN);
+                break;
         }
     }
 
+    @BindView(R.id.btn_sign)    SignInButton btn_sign;
     @BindView(R.id.tv_point)    TextView tv_point;
     @BindView(R.id.btn_reward)  Button btn_reward;
     @BindView(R.id.spinner_source_lang)    Spinner spinner_source_lang;
