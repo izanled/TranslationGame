@@ -44,6 +44,7 @@ import com.google.android.gms.ads.reward.RewardItem;
 import com.google.android.gms.ads.reward.RewardedVideoAd;
 import com.google.android.gms.ads.reward.RewardedVideoAdListener;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.izanled.translation.game.R;
 import com.izanled.translation.game.common.CommonData;
 import com.izanled.translation.game.data.UserData;
