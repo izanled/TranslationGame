@@ -16,8 +16,8 @@ android {
         applicationId "com.izanled.translation.game"
         minSdkVersion 23
         targetSdkVersion 27
-        versionCode 03
-        versionName "0.3"
+        versionCode 104
+        versionName "1.0.4"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -58,7 +58,7 @@ dependencies {
     implementation 'org.greenrobot:eventbus:3.1.1'
 
     implementation 'com.google.firebase:firebase-core:16.0.4'
-    implementation 'com.google.firebase:firebase-ml-vision:17.0.1'
+    implementation 'com.google.firebase:firebase-ml-vision:18.0.1'
     implementation 'com.google.firebase:firebase-ads:17.0.0'
     implementation 'com.google.firebase:firebase-firestore:17.1.1'
     implementation 'com.firebaseui:firebase-ui-auth:4.2.0'

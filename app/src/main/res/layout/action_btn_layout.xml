@@ -18,6 +18,7 @@
         android:id="@+id/btn_capture"
         android:layout_width="30dp"
         android:layout_height="33dp"
+        android:layout_marginTop="5dp"
         android:adjustViewBounds="true"
         android:background="@drawable/selector_action_btn"
         android:scaleType="centerCrop"
@@ -27,6 +28,7 @@
         android:id="@+id/btn_chat"
         android:layout_width="30dp"
         android:layout_height="30dp"
+        android:layout_marginTop="5dp"
         android:adjustViewBounds="true"
         android:background="@drawable/selector_action_btn"
         android:scaleType="fitCenter"
@@ -36,6 +38,7 @@
         android:id="@+id/btn_last_text"
         android:layout_width="30dp"
         android:layout_height="30dp"
+        android:layout_marginTop="5dp"
         android:adjustViewBounds="true"
         android:background="@drawable/selector_action_btn"
         android:scaleType="centerCrop"
@@ -45,15 +48,7 @@
         android:id="@+id/btn_close"
         android:layout_width="30dp"
         android:layout_height="30dp"
-        android:adjustViewBounds="true"
-        android:background="@drawable/selector_action_btn"
-        android:scaleType="centerCrop"
-        android:src="@android:drawable/ic_menu_close_clear_cancel" />
-
-    <ImageButton
-        android:id="@+id/btn_exit"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
+        android:layout_marginTop="5dp"
         android:adjustViewBounds="true"
         android:background="@drawable/selector_action_btn"
         android:scaleType="centerCrop"
@@ -62,9 +57,11 @@
     <ImageButton
         android:id="@+id/btn_arrow"
         android:layout_width="match_parent"
-        android:layout_height="15dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
         android:adjustViewBounds="true"
         android:background="@drawable/selector_action_btn"
+        android:paddingBottom="5dp"
         android:scaleType="fitCenter"
         android:src="@android:drawable/arrow_down_float" />
 

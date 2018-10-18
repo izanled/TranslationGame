@@ -88,7 +88,7 @@ public class SqlManager {
         values.put("target",  insertData.getTarget());
         values.put("source",  insertData.getSource());
 
-        db.update("transfer_table", values, "_id=?", new String[]{String.valueOf(insertData.get_id())});
+        db.update("transfer_table", values, "_Id=?", new String[]{String.valueOf(insertData.get_id())});
 
         db.close();
     }

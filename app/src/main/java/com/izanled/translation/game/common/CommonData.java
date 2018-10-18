@@ -24,6 +24,7 @@ public class CommonData {
 
     private String imgPath;
     private boolean isStarted = false;
+    private boolean isServiceRun = false;
     private String mSourceLang = "zh";
     private String mTargetLang = "ko";
 
@@ -129,6 +130,15 @@ public class CommonData {
         this.curUser = curUser;
     }
 
+
+    public boolean isServiceRun() {
+        return isServiceRun;
+    }
+
+    public void setServiceRun(boolean serviceRun) {
+        isServiceRun = serviceRun;
+    }
+
     /**
      * preferences 삭제
      */
@@ -185,6 +195,10 @@ public class CommonData {
         editor.putBoolean(key, value);
         editor.commit();
     }
+
+    // 유저 고유 아이디
+    public void setUserDocId(String userDocId){setSharedPreferenceData("mUserDocId", userDocId);}
+    public String getUserDocId(){return getSharedPreference().getString("mUserDocId",null);}
 
     // 번역 할 언어
     public void setSourceLang(int sourceLang){setSharedPreferenceData("mSourceLang", sourceLang);}

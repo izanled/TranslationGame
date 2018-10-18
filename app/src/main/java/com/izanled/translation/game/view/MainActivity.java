@@ -21,7 +21,6 @@ import android.os.Looper;
 import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.Display;
 import android.view.OrientationEventListener;
 import android.view.View;
@@ -31,7 +30,6 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.IdpResponse;
@@ -97,7 +95,7 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
     private FirebaseFirestore db;
     FirebaseUser user;
 
-    private int point = 0;
+    HelpDialog mHelpDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -129,6 +127,8 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
     }
 
     private void initLayout(){
+        btn_sign.setSize(SignInButton.SIZE_STANDARD);
+
         spinner_source_lang.setSelection(CommonData.getInstance().getSourceLang());
         spinner_target_lang.setSelection(CommonData.getInstance().getTargetLang());
         sw_orientation.setOnCheckedChangeListener((compoundButton, b) -> {
@@ -224,11 +224,12 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
     private void initAdMob(){
         // 베너 광고 초기화
         AdRequest adRequest = new AdRequest.Builder().build();
-        ad_view.loadAd(adRequest);
+        ad_view_bottom.loadAd(adRequest);
+        ad_view_top.loadAd(adRequest);
 
         // 전면 광고 초기화
         mInterstitialAd = new InterstitialAd(this);
-        mInterstitialAd.setAdUnitId("ca-app-pub-3940256099942544/1033173712");
+        mInterstitialAd.setAdUnitId("ca-app-pub-8427929259216639/3837255858");
         mInterstitialAd.loadAd(new AdRequest.Builder().build());
         mInterstitialAd.setAdListener(new AdListener(){
             @Override
@@ -248,8 +249,8 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
      * 리워드 광고 초기화
      */
     private void loadRewardedVideoAd() {
-        mRewardedVideoAd.loadAd("ca-app-pub-3940256099942544/5224354917",
-                new AdRequest.Builder().build());
+        /*mRewardedVideoAd.loadAd("ca-app-pub-3940256099942544/5224354917", new AdRequest.Builder().build());*/     // 실험 광고
+        mRewardedVideoAd.loadAd("ca-app-pub-8427929259216639/8109750770", new AdRequest.Builder().build());
     }
 
     /**
@@ -257,54 +258,57 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
      */
     @Override
     public void onRewarded(RewardItem reward) {
-        Toast.makeText(this, "onRewarded! currency: " + reward.getType() + "  amount: " +
-                reward.getAmount(), Toast.LENGTH_SHORT).show();
         // Reward the user.
-        point = point + 100;
-        tv_point.setText(String.valueOf(point));
+        try {
+            db.collection(CommonData.COLLECTION_USERS).document(CommonData.getInstance().getUserDocId()).update("point", CommonData.getInstance().getCurUser().getPoint()+200).addOnCompleteListener(task -> {
+                if(task.isSuccessful()){
+                    ToastManager.getInstance().showLongTosat(getString(R.string.success_rewoad));
+                }
+            });
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void onRewardedVideoAdLeftApplication() {
-        Toast.makeText(this, "onRewardedVideoAdLeftApplication",
-                Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "onRewardedVideoAdLeftApplication", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onRewardedVideoAdClosed() {
-        Toast.makeText(this, "onRewardedVideoAdClosed", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "onRewardedVideoAdClosed", Toast.LENGTH_SHORT).show();
         loadRewardedVideoAd();
     }
 
     @Override
     public void onRewardedVideoAdFailedToLoad(int errorCode) {
-        Toast.makeText(this, "onRewardedVideoAdFailedToLoad", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "onRewardedVideoAdFailedToLoad", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onRewardedVideoAdLoaded() {
-        Toast.makeText(this, "onRewardedVideoAdLoaded", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "onRewardedVideoAdLoaded", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onRewardedVideoAdOpened() {
-        Toast.makeText(this, "onRewardedVideoAdOpened", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "onRewardedVideoAdOpened", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onRewardedVideoStarted() {
-        Toast.makeText(this, "onRewardedVideoStarted", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "onRewardedVideoStarted", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onRewardedVideoCompleted() {
-        Toast.makeText(this, "onRewardedVideoCompleted", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "onRewardedVideoCompleted", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        ad_view.postDelayed(() -> mInterstitialAd.show(), 1000l);
     }
 
     @Override
@@ -316,7 +320,7 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
     @Override
     protected void onResume() {
         mRewardedVideoAd.resume(this);
-        if(CommonData.getInstance().isStarted())
+        if(CommonData.getInstance().isServiceRun())
             btn_start.setText(R.string.end);
         else
             btn_start.setText(R.string.start);
@@ -413,7 +417,6 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
     private class MediaProjectionStopCallback extends MediaProjection.Callback {
         @Override
         public void onStop() {
-            Log.e("ScreenCapture", "stopping projection.");
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
@@ -440,12 +443,10 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
                         if (!storeDirectory.exists()) {
                             boolean success = storeDirectory.mkdirs();
                             if (!success) {
-                                Log.e(TAG, "failed to create file storage directory.");
                                 return;
                             }
                         }
                     } else {
-                        Log.e(TAG, "failed to create file storage directory, getExternalFilesDir is null.");
                         return;
                     }
 
@@ -478,8 +479,7 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
                         if(task.isSuccessful()){
                             UserData sing_user = null;
                             for (QueryDocumentSnapshot document : task.getResult()){
-                                sing_user = document.toObject(UserData.class);
-                                sing_user.set_id(document.getId());
+                                sing_user = document.toObject(UserData.class).withId(document.getId());
                                 CommonData.getInstance().setCurUser(sing_user);
                             }
                             if(sing_user == null){
@@ -487,16 +487,17 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
                                 newUserCrate(user.getEmail());
                             }else{
                                 ToastManager.getInstance().showLongTosat(user.getEmail()+ " "+ getString(R.string.msg_login_id));
-                                startActivity(new Intent(MainActivity.this, MainActivity.class));
-                                finish();
+                                getUserData(user.getEmail());
                             }
                         }else{
                             ToastManager.getInstance().showLongTosat(getString(R.string.msg_not_found_id));
+                            btn_sign.setVisibility(View.VISIBLE);
                         }
                     });
 
                     // ...
                 } else {
+                    btn_sign.setVisibility(View.VISIBLE);
                     ToastManager.getInstance().showLongTosat(getString(R.string.msg_fail_login));
                     //response.getError().printStackTrace();
                     //Log.d(TAG, "에러 코드 : " + response.getError().getErrorCode());
@@ -559,16 +560,15 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
             if(task.isSuccessful()){
                 UserData sing_user = null;
                 for (QueryDocumentSnapshot document : task.getResult()){
-                    sing_user = document.toObject(UserData.class);
-                    sing_user.set_id(document.getId());
+                    sing_user = document.toObject(UserData.class).withId(document.getId());
                     CommonData.getInstance().setCurUser(sing_user);
+                    CommonData.getInstance().setUserDocId(document.getId());
                 }
                 if(sing_user != null){
                     ToastManager.getInstance().showLongTosat(email+ " "+ getString(R.string.msg_login_id));
 
-                    db.collection(CommonData.COLLECTION_USERS).document(CommonData.getInstance().getCurUser().get_id()).addSnapshotListener((documentSnapshot, e) -> {
-                        CommonData.getInstance().setCurUser(documentSnapshot.toObject(UserData.class));
-                        CommonData.getInstance().getCurUser().set_id(documentSnapshot.getId());
+                    db.collection(CommonData.COLLECTION_USERS).document(CommonData.getInstance().getUserDocId()).addSnapshotListener((documentSnapshot, e) -> {
+                        CommonData.getInstance().setCurUser(documentSnapshot.toObject(UserData.class).withId(documentSnapshot.getId()));
                         tv_point.setText(String.valueOf(CommonData.getInstance().getCurUser().getPoint()) + " P");
                     });
 
@@ -581,7 +581,7 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
     }
 
     public void newUserCrate(String email){
-        UserData newUser = new UserData(email, 300);
+        UserData newUser = new UserData(email, 500);
         db.collection(CommonData.COLLECTION_USERS).document().set(newUser).addOnCompleteListener(task -> {
             if (task.isSuccessful()){
                 getUserData(email);
@@ -591,27 +591,27 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
         });
     }
 
-    @OnClick({R.id.btn_start, R.id.btn_reward})
+    @OnClick({R.id.btn_start, R.id.btn_reward,R.id.btn_sign,R.id.btn_help})
     public void OnClick(View view){
         switch (view.getId()){
             case R.id.btn_start:
                 if(user != null){
-                    if(CommonData.getInstance().isStarted()){
+                    if(CommonData.getInstance().isServiceRun()){
                         // 서비스 실행 중 - 종료 행동
-                        CommonData.getInstance().setStarted(false);
+                        CommonData.getInstance().setServiceRun(false);
                         btn_start.setText(R.string.start);
                         ToastManager.getInstance().showShortTosat(getString(R.string.end_service));
                         stopService(new Intent(this, TranslationService.class));    //서비스 종료
                         mInterstitialAd.show();
                     }else{
                         // 서비스 미 실행 중 - 실행 행동
-                        CommonData.getInstance().setStarted(true);
-                        btn_start.setText(R.string.end);
-                        ToastManager.getInstance().showShortTosat(getString(R.string.start_service));
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
                             Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()));
                             startActivityForResult(intent, REQ_CODE_OVERLAY_PERMISSION);
                         } else {
+                            CommonData.getInstance().setServiceRun(true);
+                            btn_start.setText(R.string.end);
+                            ToastManager.getInstance().showShortTosat(getString(R.string.start_service));
                             startService(new Intent(this, TranslationService.class));    //서비스 시작
                             startProjection();
                         }
@@ -622,10 +622,20 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
 
                 break;
             case R.id.btn_reward:
-                mRewardedVideoAd.show();
+                if(user != null) {
+                    mRewardedVideoAd.show();
+                }else{
+                    ToastManager.getInstance().showShortTosat(getString(R.string.need_login));
+                }
                 break;
             case R.id.btn_sign:
                 startActivityForResult(AuthUI.getInstance().createSignInIntentBuilder().setAvailableProviders(providers).build(), RC_SIGN_IN);
+                break;
+            case R.id.btn_help:
+                if(mHelpDialog == null)
+                    mHelpDialog = new HelpDialog(MainActivity.this);
+
+                mHelpDialog.show();
                 break;
         }
     }
@@ -637,7 +647,10 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
     @BindView(R.id.spinner_target_lang)     Spinner spinner_target_lang;
     @BindView(R.id.sw_orientation)          Switch sw_orientation;
     @BindView(R.id.sw_show_original)        Switch sw_show_original;
-    @BindView(R.id.ad_view)    AdView ad_view;
+    @BindView(R.id.ad_view_top)    AdView ad_view_top;
+    @BindView(R.id.ad_view_bottom)    AdView ad_view_bottom;
+
+    @BindView(R.id.btn_help)    Button btn_help;
 
     @BindView(R.id.btn_start)    Button btn_start;
 }

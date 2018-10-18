@@ -6,22 +6,33 @@
     android:layout_height="match_parent"
     tools:context=".view.MainActivity">
 
+    <com.google.android.gms.ads.AdView xmlns:ads="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/ad_view_top"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        ads:adSize="SMART_BANNER"
+        ads:adUnitId="ca-app-pub-8427929259216639/6075324816"></com.google.android.gms.ads.AdView>
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/ad_view">
+        android:layout_above="@+id/ad_view_bottom"
+        android:layout_below="@+id/ad_view_top">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="15dp">
+            android:padding="20dp">
 
             <com.google.android.gms.common.SignInButton
                 android:id="@+id/btn_sign"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="20dp"/>
+                android:layout_marginBottom="20dp"
+                android:visibility="gone" />
 
             <Button
                 android:id="@+id/btn_start"
@@ -123,18 +134,27 @@
                 android:layout_weight="1"
                 android:text=""
                 android:textSize="16sp" />
+
+            <Button
+                android:id="@+id/btn_help"
+                android:layout_width="match_parent"
+                android:layout_height="30dp"
+                android:layout_marginTop="20dp"
+                android:background="@drawable/selector_btn"
+                android:text="@string/msg_help_user"
+                android:textColor="@android:color/white" />
+
+
         </LinearLayout>
     </ScrollView>
 
-    <com.google.android.gms.ads.AdView
-        xmlns:ads="http://schemas.android.com/apk/res-auto"
-        android:id="@+id/ad_view"
+    <com.google.android.gms.ads.AdView xmlns:ads="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/ad_view_bottom"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
         android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
         ads:adSize="SMART_BANNER"
-        ads:adUnitId="ca-app-pub-3940256099942544/6300978111">
-    </com.google.android.gms.ads.AdView>
+        ads:adUnitId="ca-app-pub-8427929259216639/1735441351"></com.google.android.gms.ads.AdView>
 
 </RelativeLayout>

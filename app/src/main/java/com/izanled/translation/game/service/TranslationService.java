@@ -70,6 +70,7 @@ public class TranslationService extends Service implements View.OnClickListener 
             e.printStackTrace();
         }
 
+        db = FirebaseFirestore.getInstance();
         mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);  //윈도우 매니저
         inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         inputMethodManager = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
@@ -83,11 +84,15 @@ public class TranslationService extends Service implements View.OnClickListener 
         initActionBtnView(inflater);
         initTvPointView();
 
-        db = FirebaseFirestore.getInstance();
-        db.collection(CommonData.COLLECTION_USERS).document(CommonData.getInstance().getCurUser().get_id()).addSnapshotListener((documentSnapshot, e) -> {
-            CommonData.getInstance().setCurUser(documentSnapshot.toObject(UserData.class));
-            tv_point.setText(String.valueOf(CommonData.getInstance().getCurUser().getPoint()) + " P");
-        });
+
+        try{
+            db.collection(CommonData.COLLECTION_USERS).document(CommonData.getInstance().getUserDocId()).addSnapshotListener((documentSnapshot, e) -> {
+                CommonData.getInstance().setCurUser(documentSnapshot.toObject(UserData.class));
+                tv_point.setText(String.valueOf(CommonData.getInstance().getCurUser().getPoint()) + " P");
+            });
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -105,63 +110,65 @@ public class TranslationService extends Service implements View.OnClickListener 
         btn_chat = mActionBtnView.findViewById(R.id.btn_chat);
         btn_last_text = mActionBtnView.findViewById(R.id.btn_last_text);
         btn_close = mActionBtnView.findViewById(R.id.btn_close);
-        btn_exit = mActionBtnView.findViewById(R.id.btn_exit);
         btn_arrow = mActionBtnView.findViewById(R.id.btn_arrow);
 
         btn_capture.setOnClickListener(this);
         btn_close.setOnClickListener(this);
         btn_chat.setOnClickListener(this);
         btn_last_text.setOnClickListener(this);
-        btn_exit.setOnClickListener(this);
         btn_arrow.setOnClickListener(this);
 
         btn_capture.setVisibility(View.GONE);
         btn_close.setVisibility(View.GONE);
         btn_chat.setVisibility(View.GONE);
         btn_last_text.setVisibility(View.GONE);
-        btn_exit.setVisibility(View.GONE);
 
-        btn_screen_shot.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                switch(event.getAction()) {
-                    case MotionEvent.ACTION_DOWN:                //사용자 터치 다운이면
-                        START_X = event.getRawX();                    //터치 시작 점
-                        START_Y = event.getRawY();                    //터치 시작 점
-                        PREV_X = mParamsBtn.x;                            //뷰의 시작 점
-                        PREV_Y = mParamsBtn.y;                            //뷰의 시작 점
-                        break;
-                    case MotionEvent.ACTION_MOVE:
-                        int x = (int)(event.getRawX() - START_X);    //이동한 거리
-                        int y = (int)(event.getRawY() - START_Y);    //이동한 거리
+        btn_screen_shot.setOnTouchListener((v, event) -> {
+            switch(event.getAction()) {
+                case MotionEvent.ACTION_DOWN:                //사용자 터치 다운이면
+                    START_X = event.getRawX();                    //터치 시작 점
+                    START_Y = event.getRawY();                    //터치 시작 점
+                    PREV_X = mParamsBtn.x;                            //뷰의 시작 점
+                    PREV_Y = mParamsBtn.y;                            //뷰의 시작 점
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    int x = (int)(event.getRawX() - START_X);    //이동한 거리
+                    int y = (int)(event.getRawY() - START_Y);    //이동한 거리
 
-                        //터치해서 이동한 만큼 이동 시킨다
-                        mParamsBtn.x = PREV_X + x;
-                        mParamsBtn.y = PREV_Y + y;
+                    //터치해서 이동한 만큼 이동 시킨다
+                    mParamsBtn.x = PREV_X + x;
+                    mParamsBtn.y = PREV_Y + y;
 
-                        //optimizePosition();        //뷰의 위치 최적화
-                        mWindowManager.updateViewLayout(mActionBtnView, mParamsBtn);    //뷰 업데이트
-                        break;
-                    case MotionEvent.ACTION_UP:
+                    //optimizePosition();        //뷰의 위치 최적화
+                    mWindowManager.updateViewLayout(mActionBtnView, mParamsBtn);    //뷰 업데이트
+                    break;
+                case MotionEvent.ACTION_UP:
 
-                        int x_up = (int)(event.getRawX() - START_X);    //이동한 거리
-                        int y_up = (int)(event.getRawY() - START_Y);    //이동한 거리
-                        if(Math.abs(x_up) < 10 && Math.abs(y_up)  < 10){
-                            // 버튼 눌림 처리
-                            try{
-                                mActionBtnView.setVisibility(View.GONE);
+                    int x_up = (int)(event.getRawX() - START_X);    //이동한 거리
+                    int y_up = (int)(event.getRawY() - START_Y);    //이동한 거리
+                    if(Math.abs(x_up) < 10 && Math.abs(y_up)  < 10){
+                        // 버튼 눌림 처리
+                        try{
+                            mActionBtnView.setVisibility(View.GONE);
+                            ToastManager.getInstance().showShortTosat(getString(R.string.msg_help_service));
+                            CommonData.getInstance().setStarted(true);
 
-                                ToastManager.getInstance().showShortTosat(getString(R.string.msg_help_service));
-                                CommonData.getInstance().setStarted(true);
-                            }catch (Exception e){
-                                e.printStackTrace();
-                            }
+                            mActionBtnView.postDelayed(() -> {
+                                mActionBtnView.setVisibility(View.VISIBLE);
+                                btn_screen_shot.setVisibility(View.VISIBLE);
+                                btn_capture.setVisibility(View.VISIBLE);
+                                btn_close.setVisibility(View.VISIBLE);
+                                tv_point.setVisibility(View.VISIBLE);
+                            }, 500l);
 
+                        }catch (Exception e){
+                            e.printStackTrace();
                         }
-                        break;
-                }
-                return true;
+
+                    }
+                    break;
             }
+            return true;
         });
 
         //최상위 윈도우에 넣기 위한 설정
@@ -211,6 +218,8 @@ public class TranslationService extends Service implements View.OnClickListener 
         mParamsPoint.gravity = Gravity.RIGHT | Gravity.TOP;
         mParamsPoint.horizontalMargin = 0.05f;
         mWindowManager.addView(tv_point, mParamsPoint);      //윈도우에 뷰 넣기. permission 필요.
+
+        //db.collection(CommonData.COLLECTION_USERS).document(CommonData.getInstance().getCurUser()._docId).addSnapshotListener((documentSnapshot, e) -> tv_point.setText(documentSnapshot.toObject(UserData.class).getPoint()));
     }
 
     /**
@@ -245,11 +254,17 @@ public class TranslationService extends Service implements View.OnClickListener 
         btn_close_chat = mChatView.findViewById(R.id.btn_close_chat);
         et_chat.setOnEditorActionListener((textView, i, keyEvent) -> {
             if(i == EditorInfo.IME_ACTION_DONE){
-                new GoogleTranslatorTask(this, result -> {
-                    ClipData clipData = ClipData.newPlainText("label", result);
-                    clipboardManager.setPrimaryClip(clipData);
-                    ToastManager.getInstance().showLongTosat(getString(R.string.copy_text));
-                }).execute(new String[]{et_chat.getText().toString().trim(), CommonData.getInstance().getmTransferTargetTxt()});
+
+                if(et_chat.getText().toString().trim().length() <= CommonData.getInstance().getCurUser().getPoint()){
+                    new GoogleTranslatorTask(this, result -> {
+                        ClipData clipData = ClipData.newPlainText("label", result);
+                        clipboardManager.setPrimaryClip(clipData);
+                        ToastManager.getInstance().showLongTosat(getString(R.string.copy_text));
+                        db.collection(CommonData.COLLECTION_USERS).document(CommonData.getInstance().getUserDocId()).update("point", CommonData.getInstance().getCurUser().getPoint()-et_chat.getText().toString().trim().length());
+                    }).execute(new String[]{et_chat.getText().toString().trim(), CommonData.getInstance().getmTransferTargetTxt()});
+                }else{
+                    ToastManager.getInstance().showLongTosat(getString(R.string.msg_missing_points));
+                }
 
                 mChatView.setVisibility(View.GONE);
                 inputMethodManager.hideSoftInputFromInputMethod(et_chat.getWindowToken(), 0);
@@ -290,23 +305,18 @@ public class TranslationService extends Service implements View.OnClickListener 
                 tv_text_box.setText(lastText);
                 mTextView.setVisibility(View.VISIBLE);
                 break;
-            case R.id.btn_exit:
-                stopSelf();
-                break;
             case R.id.btn_arrow:
                 if(isOpen){
                     isOpen = false;
                     btn_arrow.setImageResource(android.R.drawable.arrow_down_float);
                     btn_chat.setVisibility(View.GONE);
                     btn_last_text.setVisibility(View.GONE);
-                    btn_exit.setVisibility(View.GONE);
                     tv_point.setVisibility(View.GONE);
                 }else{
                     isOpen = true;
                     btn_arrow.setImageResource(android.R.drawable.arrow_up_float);
                     btn_chat.setVisibility(View.VISIBLE);
                     btn_last_text.setVisibility(View.VISIBLE);
-                    btn_exit.setVisibility(View.VISIBLE);
                     tv_point.setVisibility(View.VISIBLE);
                 }
                 break;
@@ -375,14 +385,6 @@ public class TranslationService extends Service implements View.OnClickListener 
      */
     final Handler mImgHandler = new Handler(){
         public void handleMessage(Message msg){
-            mActionBtnView.postDelayed(() -> {
-                mActionBtnView.setVisibility(View.VISIBLE);
-                btn_screen_shot.setVisibility(View.VISIBLE);
-                btn_capture.setVisibility(View.VISIBLE);
-                btn_close.setVisibility(View.VISIBLE);
-                tv_point.setVisibility(View.VISIBLE);
-            }, 500l);
-
             mCanvasView.setVisibility(View.VISIBLE);
             mCanvasView.invalidate();
             mCanvasView.requestLayout();
@@ -439,7 +441,6 @@ public class TranslationService extends Service implements View.OnClickListener 
     ImageButton btn_capture;
     ImageButton btn_close;
     ImageButton btn_last_text;
-    ImageButton btn_exit;
     ImageButton btn_arrow;
     ImageButton btn_chat;
 

@@ -1,5 +1,6 @@
 package com.izanled.translation.game.view;
 
+import android.content.ClipData;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -12,6 +13,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.ml.vision.FirebaseVision;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 import com.google.firebase.ml.vision.text.FirebaseVisionCloudTextRecognizerOptions;
@@ -131,11 +133,34 @@ public class DrawTouchView extends View {
         FirebaseVisionCloudTextRecognizerOptions options = new FirebaseVisionCloudTextRecognizerOptions.Builder().setLanguageHints(Arrays.asList("ca", "hi")).build();
         FirebaseVisionTextRecognizer textRecognizer = FirebaseVision.getInstance().getCloudTextRecognizer(options);
 
-        textRecognizer.processImage(image)
-                .addOnSuccessListener(result -> {
+        textRecognizer.processImage(image).addOnSuccessListener(result -> {
                     final String original = result.getText();
 
                     if(original.length() > 0){
+
+                        if(original.trim().length() <= CommonData.getInstance().getCurUser().getPoint()){
+
+                            new GoogleTranslatorTask(mContext, result1 -> {
+                                if(CommonData.getInstance().getIsShowOriginal()){
+                                    String lastStr = mContext.getString(R.string.original) + " : " + original + "\n" + mContext.getString(R.string.translation) + " : " + result1;
+
+                                    LastTextData lastTextData = new LastTextData(lastStr);
+
+                                    EventBus.getDefault().post(lastTextData);
+                                }else{
+                                    LastTextData lastTextData = new LastTextData(result1);
+
+                                    EventBus.getDefault().post(lastTextData);
+                                }
+
+                                FirebaseFirestore.getInstance().collection(CommonData.COLLECTION_USERS).document(CommonData.getInstance().getUserDocId()).update("point", CommonData.getInstance().getCurUser().getPoint()-original.trim().length());
+
+                            }).execute(new String[]{original, CommonData.getInstance().getmTransferTargetImg()});
+
+                        }else{
+                            ToastManager.getInstance().showLongTosat(mContext.getString(R.string.msg_missing_points));
+                        }
+
                         new GoogleTranslatorTask(mContext, result1 -> {
                             if(CommonData.getInstance().getIsShowOriginal()){
                                 String lastStr = mContext.getString(R.string.original) + " : " + original + "\n" + mContext.getString(R.string.translation) + " : " + result1;
@@ -154,8 +179,7 @@ public class DrawTouchView extends View {
                         ToastManager.getInstance().showLongTosat(mContext.getString(R.string.dont_find_text));
                     }
                 })
-                .addOnFailureListener(
-                        e -> {ToastManager.getInstance().showLongTosat(mContext.getString(R.string.unknown_error));});
+                .addOnFailureListener( e -> {ToastManager.getInstance().showLongTosat(mContext.getString(R.string.unknown_error));});
     }
 
     @Override
@@ -196,8 +220,6 @@ public class DrawTouchView extends View {
                 initT = tump;
             }
             performClick();
-            Log.d("AAAAAAAAAA", "initL: " + initL + "initT: " + initT);
-            Log.d("AAAAAAAAAA", "initR: " + initR + "initB: " + initB);
         }
         invalidate();
         return true;
