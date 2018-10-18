@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
@@ -30,6 +31,7 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.IdpResponse;
@@ -129,6 +131,12 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
     private void initLayout(){
         btn_sign.setSize(SignInButton.SIZE_STANDARD);
 
+        try {
+            tv_version.setText(getString(R.string.app_version) + " " + getPackageManager().getPackageInfo(getPackageName(),0).versionName);
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
+
         spinner_source_lang.setSelection(CommonData.getInstance().getSourceLang());
         spinner_target_lang.setSelection(CommonData.getInstance().getTargetLang());
         sw_orientation.setOnCheckedChangeListener((compoundButton, b) -> {
@@ -223,7 +231,9 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
      */
     private void initAdMob(){
         // 베너 광고 초기화
-        AdRequest adRequest = new AdRequest.Builder().build();
+        AdRequest adRequest = new AdRequest.Builder()
+                .addTestDevice("84B5C0F73F4B4897C483EC3A2EA1A04C")
+                .build();
         ad_view_bottom.loadAd(adRequest);
         ad_view_top.loadAd(adRequest);
 
@@ -249,8 +259,8 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
      * 리워드 광고 초기화
      */
     private void loadRewardedVideoAd() {
-        /*mRewardedVideoAd.loadAd("ca-app-pub-3940256099942544/5224354917", new AdRequest.Builder().build());*/     // 실험 광고
-        mRewardedVideoAd.loadAd("ca-app-pub-8427929259216639/8109750770", new AdRequest.Builder().build());
+        //mRewardedVideoAd.loadAd("ca-app-pub-3940256099942544/5224354917", new AdRequest.Builder().addTestDevice("84B5C0F73F4B4897C483EC3A2EA1A04C").build());     // 실험 광고
+        mRewardedVideoAd.loadAd("ca-app-pub-8427929259216639/8109750770", new AdRequest.Builder().addTestDevice("84B5C0F73F4B4897C483EC3A2EA1A04C").build());
     }
 
     /**
@@ -272,38 +282,38 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
 
     @Override
     public void onRewardedVideoAdLeftApplication() {
-        //Toast.makeText(this, "onRewardedVideoAdLeftApplication", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "onRewardedVideoAdLeftApplication", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onRewardedVideoAdClosed() {
-        //Toast.makeText(this, "onRewardedVideoAdClosed", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "onRewardedVideoAdClosed", Toast.LENGTH_SHORT).show();
         loadRewardedVideoAd();
     }
 
     @Override
     public void onRewardedVideoAdFailedToLoad(int errorCode) {
-        //Toast.makeText(this, "onRewardedVideoAdFailedToLoad", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "onRewardedVideoAdFailedToLoad", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onRewardedVideoAdLoaded() {
-        //Toast.makeText(this, "onRewardedVideoAdLoaded", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "onRewardedVideoAdLoaded", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onRewardedVideoAdOpened() {
-        //Toast.makeText(this, "onRewardedVideoAdOpened", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "onRewardedVideoAdOpened", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onRewardedVideoStarted() {
-        //Toast.makeText(this, "onRewardedVideoStarted", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "onRewardedVideoStarted", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onRewardedVideoCompleted() {
-        //Toast.makeText(this, "onRewardedVideoCompleted", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "onRewardedVideoCompleted", Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -653,4 +663,5 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
     @BindView(R.id.btn_help)    Button btn_help;
 
     @BindView(R.id.btn_start)    Button btn_start;
+    @BindView(R.id.tv_version)  TextView tv_version;
 }

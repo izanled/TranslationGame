@@ -135,6 +135,13 @@
                 android:text=""
                 android:textSize="16sp" />
 
+            <TextView
+                android:id="@+id/tv_version"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/app_version"
+                android:textColor="@color/browser_actions_text_color" />
+
             <Button
                 android:id="@+id/btn_help"
                 android:layout_width="match_parent"
