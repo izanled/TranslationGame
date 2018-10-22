@@ -16,8 +16,8 @@ android {
         applicationId "com.izanled.translation.game"
         minSdkVersion 23
         targetSdkVersion 27
-        versionCode 104
-        versionName "1.0.4"
+        versionCode 107
+        versionName "1.0.7"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -42,7 +42,7 @@ repositories {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation('com.crashlytics.sdk.android:crashlytics:2.9.5'){
+    implementation('com.crashlytics.sdk.android:crashlytics:2.9.5') {
         transitive = true;
     }
     //noinspection GradleCompatible

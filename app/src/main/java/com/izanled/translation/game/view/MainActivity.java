@@ -1,31 +1,16 @@
 package com.izanled.translation.game.view;
 
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.PixelFormat;
-import android.graphics.Point;
-import android.hardware.display.DisplayManager;
-import android.hardware.display.VirtualDisplay;
-import android.media.Image;
-import android.media.ImageReader;
-import android.media.projection.MediaProjection;
-import android.media.projection.MediaProjectionManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
-import android.view.Display;
-import android.view.OrientationEventListener;
 import android.view.View;
-import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.Spinner;
@@ -51,16 +36,10 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.izanled.translation.game.R;
 import com.izanled.translation.game.common.CommonData;
 import com.izanled.translation.game.data.UserData;
-import com.izanled.translation.game.eventbus.BitmapData;
 import com.izanled.translation.game.service.TranslationService;
 import com.izanled.translation.game.utils.ToastManager;
 
-import org.greenrobot.eventbus.EventBus;
-
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 
@@ -71,26 +50,10 @@ import butterknife.OnClick;
 public class MainActivity extends AppCompatActivity implements RewardedVideoAdListener {
     private static final String TAG = MainActivity.class.getName();
 
-    private static final int RC_PROJECTION = 100;
     static final int RC_SIGN_IN = 123;
     List<AuthUI.IdpConfig> providers = null;
-    private static String STORE_DIRECTORY;
-    private static final String SCREENCAP_NAME = "screencap";
-    private static final int VIRTUAL_DISPLAY_FLAGS = DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY | DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC;
-    private static MediaProjection sMediaProjection;
 
-    public static final int REQ_CODE_OVERLAY_PERMISSION = 9999;
-
-    private MediaProjectionManager mProjectionManager;
-    private ImageReader mImageReader;
-    private Handler mHandler;
-    private Display mDisplay;
-    private VirtualDisplay mVirtualDisplay;
-    private int mDensity;
-    private int mWidth;
-    private int mHeight;
-    private int mRotation;
-    private OrientationChangeCallback mOrientationChangeCallback;
+    static final int REQ_CODE_OVERLAY_PERMISSION = 9999;
 
     private InterstitialAd mInterstitialAd;
     private RewardedVideoAd mRewardedVideoAd;
@@ -108,7 +71,6 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
         initLayout();
         initAdMob();
         db = FirebaseFirestore.getInstance();
-        mProjectionManager = (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
         user = FirebaseAuth.getInstance().getCurrentUser();
 
         if(user == null){
@@ -118,14 +80,6 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
             getUserData(user.getEmail());
         }
 
-        new Thread() {
-            @Override
-            public void run() {
-                Looper.prepare();
-                mHandler = new Handler();
-                Looper.loop();
-            }
-        }.start();
     }
 
     private void initLayout(){
@@ -139,16 +93,6 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
 
         spinner_source_lang.setSelection(CommonData.getInstance().getSourceLang());
         spinner_target_lang.setSelection(CommonData.getInstance().getTargetLang());
-        sw_orientation.setOnCheckedChangeListener((compoundButton, b) -> {
-            CommonData.getInstance().setOrientation(b);
-            if(b){
-                sw_orientation.setText(getString(R.string.landscape));
-                MainActivity.this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
-            }else{
-                sw_orientation.setText(getString(R.string.portrait));
-                MainActivity.this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-            }
-        });
 
         sw_show_original.setOnCheckedChangeListener((compoundButton, b) -> {
             if(b)
@@ -158,13 +102,7 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
             CommonData.getInstance().setIsShowOriginal(b);
         });
 
-        sw_orientation.setChecked(CommonData.getInstance().getOrientation());
         sw_show_original.setChecked(CommonData.getInstance().getIsShowOriginal());
-
-        if(CommonData.getInstance().getOrientation())
-            sw_orientation.setText(getString(R.string.landscape));
-        else
-            sw_orientation.setText(getString(R.string.portrait));
 
         if(CommonData.getInstance().getIsShowOriginal())
             sw_show_original.setText(R.string.show);
@@ -231,9 +169,7 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
      */
     private void initAdMob(){
         // 베너 광고 초기화
-        AdRequest adRequest = new AdRequest.Builder()
-                .addTestDevice("84B5C0F73F4B4897C483EC3A2EA1A04C")
-                .build();
+        AdRequest adRequest = new AdRequest.Builder().build();
         ad_view_bottom.loadAd(adRequest);
         ad_view_top.loadAd(adRequest);
 
@@ -260,7 +196,7 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
      */
     private void loadRewardedVideoAd() {
         //mRewardedVideoAd.loadAd("ca-app-pub-3940256099942544/5224354917", new AdRequest.Builder().addTestDevice("84B5C0F73F4B4897C483EC3A2EA1A04C").build());     // 실험 광고
-        mRewardedVideoAd.loadAd("ca-app-pub-8427929259216639/8109750770", new AdRequest.Builder().addTestDevice("84B5C0F73F4B4897C483EC3A2EA1A04C").build());
+        mRewardedVideoAd.loadAd("ca-app-pub-8427929259216639/8109750770", new AdRequest.Builder().build());
     }
 
     /**
@@ -282,38 +218,38 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
 
     @Override
     public void onRewardedVideoAdLeftApplication() {
-        Toast.makeText(this, "onRewardedVideoAdLeftApplication", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "onRewardedVideoAdLeftApplication", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onRewardedVideoAdClosed() {
-        Toast.makeText(this, "onRewardedVideoAdClosed", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "onRewardedVideoAdClosed", Toast.LENGTH_SHORT).show();
         loadRewardedVideoAd();
     }
 
     @Override
     public void onRewardedVideoAdFailedToLoad(int errorCode) {
-        Toast.makeText(this, "onRewardedVideoAdFailedToLoad", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "onRewardedVideoAdFailedToLoad", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onRewardedVideoAdLoaded() {
-        Toast.makeText(this, "onRewardedVideoAdLoaded", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "onRewardedVideoAdLoaded", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onRewardedVideoAdOpened() {
-        Toast.makeText(this, "onRewardedVideoAdOpened", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "onRewardedVideoAdOpened", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onRewardedVideoStarted() {
-        Toast.makeText(this, "onRewardedVideoStarted", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "onRewardedVideoStarted", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onRewardedVideoCompleted() {
-        Toast.makeText(this, "onRewardedVideoCompleted", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "onRewardedVideoCompleted", Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -343,142 +279,13 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
         super.onDestroy();
         mRewardedVideoAd.destroy(this);
         stopService(new Intent(this, TranslationService.class));
-        stopProjection();
-    }
-
-
-    private class ImageAvailableListener implements ImageReader.OnImageAvailableListener {
-        @Override
-        public void onImageAvailable(ImageReader reader) {
-            Image image = null;
-            FileOutputStream fos = null;
-            Bitmap bitmap = null;
-
-            try {
-                image = reader.acquireLatestImage();
-                if(CommonData.getInstance().isStarted()){
-                    CommonData.getInstance().setStarted(false);
-                    if (image != null) {
-                        Image.Plane[] planes = image.getPlanes();
-                        ByteBuffer buffer = planes[0].getBuffer();
-                        int pixelStride = planes[0].getPixelStride();
-                        int rowStride = planes[0].getRowStride();
-                        int rowPadding = rowStride - pixelStride * mWidth;
-
-                        DisplayMetrics matrix = new DisplayMetrics();
-                        ((WindowManager) getSystemService(WINDOW_SERVICE)).getDefaultDisplay().getMetrics(matrix);		//화면 정보를 가져와서
-
-                        // create bitmap
-                        bitmap = Bitmap.createBitmap(mWidth + rowPadding / pixelStride, mHeight, Bitmap.Config.ARGB_8888);
-                        bitmap.copyPixelsFromBuffer(buffer);
-
-                        Bitmap bitmap1 = bitmap.copy(bitmap.getConfig(), true);
-                        BitmapData bitmapData = new BitmapData(bitmap1);
-                        EventBus.getDefault().post(bitmapData);
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                if (fos != null) {
-                    try {
-                        fos.close();
-                    } catch (IOException ioe) {
-                        ioe.printStackTrace();
-                    }
-                }
-
-                if (bitmap != null) {
-                    bitmap.recycle();
-                }
-
-                if (image != null) {
-                    image.close();
-                }
-            }
-        }
-    }
-
-    private class OrientationChangeCallback extends OrientationEventListener {
-
-        OrientationChangeCallback(Context context) {
-            super(context);
-        }
-
-        @Override
-        public void onOrientationChanged(int orientation) {
-            final int rotation = mDisplay.getRotation();
-            if (rotation != mRotation) {
-                mRotation = rotation;
-                try {
-                    // clean up
-                    if (mVirtualDisplay != null) mVirtualDisplay.release();
-                    if (mImageReader != null) mImageReader.setOnImageAvailableListener(null, null);
-
-                    // re-create virtual display depending on device width / height
-                    createVirtualDisplay();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
-    private class MediaProjectionStopCallback extends MediaProjection.Callback {
-        @Override
-        public void onStop() {
-            mHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    if (mVirtualDisplay != null) mVirtualDisplay.release();
-                    if (mImageReader != null) mImageReader.setOnImageAvailableListener(null, null);
-                    if (mOrientationChangeCallback != null) mOrientationChangeCallback.disable();
-                    sMediaProjection.unregisterCallback(MediaProjectionStopCallback.this);
-                }
-            });
-        }
+        CommonData.getInstance().setServiceRun(false);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         try {
-            if (requestCode == RC_PROJECTION) {
-                sMediaProjection = mProjectionManager.getMediaProjection(resultCode, data);
-
-                if (sMediaProjection != null) {
-                    File externalFilesDir = getExternalFilesDir(null);
-                    if (externalFilesDir != null) {
-                        STORE_DIRECTORY = externalFilesDir.getAbsolutePath() + "/screenshots/";
-                        File storeDirectory = new File(STORE_DIRECTORY);
-                        if (!storeDirectory.exists()) {
-                            boolean success = storeDirectory.mkdirs();
-                            if (!success) {
-                                return;
-                            }
-                        }
-                    } else {
-                        return;
-                    }
-
-                    // display metrics
-                    DisplayMetrics metrics = getResources().getDisplayMetrics();
-                    mDensity = metrics.densityDpi;
-                    mDisplay = getWindowManager().getDefaultDisplay();
-
-                    // create virtual display depending on device width / height
-                    //if(CommonData.getInstance().isStarted())
-                    createVirtualDisplay();
-
-                    // register orientation change callback
-                    mOrientationChangeCallback = new OrientationChangeCallback(this);
-                    if (mOrientationChangeCallback.canDetectOrientation()) {
-                        mOrientationChangeCallback.enable();
-                    }
-
-                    // register media projection stop callback
-                    sMediaProjection.registerCallback(new MediaProjectionStopCallback(), mHandler);
-                }
-            }else if (requestCode == RC_SIGN_IN) {
+            if (requestCode == RC_SIGN_IN) {
                 IdpResponse response = IdpResponse.fromResultIntent(data);
 
                 if (resultCode == RESULT_OK) {
@@ -504,49 +311,14 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
                             btn_sign.setVisibility(View.VISIBLE);
                         }
                     });
-
-                    // ...
                 } else {
                     btn_sign.setVisibility(View.VISIBLE);
                     ToastManager.getInstance().showLongTosat(getString(R.string.msg_fail_login));
-                    //response.getError().printStackTrace();
-                    //Log.d(TAG, "에러 코드 : " + response.getError().getErrorCode());
-                    // Sign in failed. If response is null the user canceled the
-                    // sign-in flow using the back button. Otherwise check
-                    // response.getError().getErrorCode() and handle the error.
-                    // ...
                 }
             }
         }catch (Exception e){
             e.printStackTrace();
         }
-    }
-
-    /****************************************** UI Widget Callbacks *******************************/
-    public void startProjection() {
-        startActivityForResult(mProjectionManager.createScreenCaptureIntent(), RC_PROJECTION);
-    }
-
-    private void stopProjection() {
-        mHandler.post(() -> {
-            if (sMediaProjection != null) {
-                sMediaProjection.stop();
-            }
-        });
-    }
-
-    /****************************************** Factoring Virtual Display creation ****************/
-    private void createVirtualDisplay() {
-        // get width and height
-        Point size = new Point();
-        mDisplay.getSize(size);
-        mWidth = size.x;
-        mHeight = size.y;
-
-        // start capture reader
-        mImageReader = ImageReader.newInstance(mWidth, mHeight, PixelFormat.RGBA_8888, 2);
-        mVirtualDisplay = sMediaProjection.createVirtualDisplay(SCREENCAP_NAME, mWidth, mHeight, mDensity, VIRTUAL_DISPLAY_FLAGS, mImageReader.getSurface(), null, mHandler);
-        mImageReader.setOnImageAvailableListener(new ImageAvailableListener(), mHandler);
     }
 
     @Override
@@ -612,7 +384,6 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
                         btn_start.setText(R.string.start);
                         ToastManager.getInstance().showShortTosat(getString(R.string.end_service));
                         stopService(new Intent(this, TranslationService.class));    //서비스 종료
-                        mInterstitialAd.show();
                     }else{
                         // 서비스 미 실행 중 - 실행 행동
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
@@ -623,7 +394,6 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
                             btn_start.setText(R.string.end);
                             ToastManager.getInstance().showShortTosat(getString(R.string.start_service));
                             startService(new Intent(this, TranslationService.class));    //서비스 시작
-                            startProjection();
                         }
                     }
                 }else{
@@ -655,7 +425,6 @@ public class MainActivity extends AppCompatActivity implements RewardedVideoAdLi
     @BindView(R.id.btn_reward)  Button btn_reward;
     @BindView(R.id.spinner_source_lang)    Spinner spinner_source_lang;
     @BindView(R.id.spinner_target_lang)     Spinner spinner_target_lang;
-    @BindView(R.id.sw_orientation)          Switch sw_orientation;
     @BindView(R.id.sw_show_original)        Switch sw_show_original;
     @BindView(R.id.ad_view_top)    AdView ad_view_top;
     @BindView(R.id.ad_view_bottom)    AdView ad_view_bottom;

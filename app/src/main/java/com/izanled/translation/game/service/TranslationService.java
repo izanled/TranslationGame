@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -15,6 +16,7 @@ import android.support.annotation.Nullable;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -35,6 +37,8 @@ import com.izanled.translation.game.sqlite.DBManager;
 import com.izanled.translation.game.sqlite.SqlManager;
 import com.izanled.translation.game.utils.GoogleTranslatorTask;
 import com.izanled.translation.game.utils.ToastManager;
+import com.izanled.translation.game.view.CaptureActivity;
+import com.izanled.translation.game.view.ChatView;
 import com.izanled.translation.game.view.DrawTouchView;
 
 import org.greenrobot.eventbus.EventBus;
@@ -57,8 +61,12 @@ public class TranslationService extends Service implements View.OnClickListener 
     int MAX_X = -1, MAX_Y = -1;
     float START_X, START_Y;
     int PREV_X, PREV_Y;
+    int LAYOUT_FLAG;
 
     DBManager mDb;
+
+    boolean isCansvasViewShow = false;
+    boolean isChatViewShow = false;
 
     @Override
     public void onCreate() {
@@ -78,9 +86,16 @@ public class TranslationService extends Service implements View.OnClickListener 
         mDb = new DBManager(this, "TansferGame", null, 1);
         SqlManager.shared(this, mDb);
 
+
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            LAYOUT_FLAG = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+        }else{
+            LAYOUT_FLAG = WindowManager.LayoutParams.TYPE_SYSTEM_ALERT;
+        }
+
         initCanvasView();
+        initChat();
         initTextView(inflater);
-        initChat(inflater);
         initActionBtnView(inflater);
         initTvPointView();
 
@@ -150,8 +165,9 @@ public class TranslationService extends Service implements View.OnClickListener 
                         // 버튼 눌림 처리
                         try{
                             mActionBtnView.setVisibility(View.GONE);
-                            ToastManager.getInstance().showShortTosat(getString(R.string.msg_help_service));
-                            CommonData.getInstance().setStarted(true);
+
+                            //CommonData.getInstance().setStarted(true);
+                            startActivity(new Intent(this, CaptureActivity.class));
 
                             mActionBtnView.postDelayed(() -> {
                                 mActionBtnView.setVisibility(View.VISIBLE);
@@ -159,7 +175,7 @@ public class TranslationService extends Service implements View.OnClickListener 
                                 btn_capture.setVisibility(View.VISIBLE);
                                 btn_close.setVisibility(View.VISIBLE);
                                 tv_point.setVisibility(View.VISIBLE);
-                            }, 500l);
+                            }, 1000l);
 
                         }catch (Exception e){
                             e.printStackTrace();
@@ -175,7 +191,7 @@ public class TranslationService extends Service implements View.OnClickListener 
         mParamsBtn = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,//항상 최 상위. 터치 이벤트 받을 수 있음.
+                LAYOUT_FLAG,//항상 최 상위. 터치 이벤트 받을 수 있음.
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,  //포커스를 가지지 않음
                 PixelFormat.TRANSLUCENT);                                        //투명
         mParamsBtn.gravity = Gravity.LEFT | Gravity.TOP;                   //왼쪽 상단에 위치하게 함.
@@ -186,7 +202,21 @@ public class TranslationService extends Service implements View.OnClickListener 
      * 사각형 그리기 뷰 세팅
      */
     public void initCanvasView(){
-        mCanvasView = new DrawTouchView(this);
+        mCanvasView = new DrawTouchView(this){
+            @Override
+            public boolean dispatchKeyEvent(KeyEvent event) {
+                if (isCansvasViewShow && event.getKeyCode()==KeyEvent.KEYCODE_BACK) {
+                    isCansvasViewShow = false;
+                    btn_capture.setVisibility(View.GONE);
+                    btn_close.setVisibility(View.GONE);
+                    mCanvasView.setVisibility(View.GONE);
+                    tv_point.setVisibility(View.GONE);
+                    Log.v("Back", "Back Key");
+                    return true;
+                }
+                return super.dispatchKeyEvent(event);
+            }
+        };
         mCanvasView.setBackgroundColor(getColor(R.color.alaphGray));
 
         mCanvasView.setVisibility(View.GONE);
@@ -195,8 +225,8 @@ public class TranslationService extends Service implements View.OnClickListener 
         mParamsCanvas = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,//항상 최 상위. 터치 이벤트 받을 수 있음.
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,  //포커스를 가지지 않음
+                LAYOUT_FLAG,//항상 최 상위. 터치 이벤트 받을 수 있음.
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,  //포커스를 가지지 않음
                 PixelFormat.TRANSLUCENT);                                        //투명
         mWindowManager.addView(mCanvasView, mParamsCanvas);      //윈도우에 뷰 넣기. permission 필요.
     }
@@ -212,7 +242,7 @@ public class TranslationService extends Service implements View.OnClickListener 
         mParamsPoint = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                LAYOUT_FLAG,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
                 PixelFormat.TRANSLUCENT);
         mParamsPoint.gravity = Gravity.RIGHT | Gravity.TOP;
@@ -237,7 +267,7 @@ public class TranslationService extends Service implements View.OnClickListener 
         mParamsText = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,//항상 최 상위. 터치 이벤트 받을 수 있음.
+                LAYOUT_FLAG,//항상 최 상위. 터치 이벤트 받을 수 있음.
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,  //포커스를 가지지 않음
                 PixelFormat.TRANSLUCENT);
         mParamsText.gravity = Gravity.BOTTOM | Gravity.CENTER;                   //하단 중앙에 위치하게 함.
@@ -248,38 +278,47 @@ public class TranslationService extends Service implements View.OnClickListener 
     /**
      * 채팅 창 초기화
      */
-    private void initChat(LayoutInflater layoutInflater){
-        mChatView = layoutInflater.inflate(R.layout.caht_layout, null);
-        et_chat = mChatView.findViewById(R.id.et_chat);
-        btn_close_chat = mChatView.findViewById(R.id.btn_close_chat);
-        et_chat.setOnEditorActionListener((textView, i, keyEvent) -> {
-            if(i == EditorInfo.IME_ACTION_DONE){
+    private void initChat(){
 
-                if(et_chat.getText().toString().trim().length() <= CommonData.getInstance().getCurUser().getPoint()){
-                    new GoogleTranslatorTask(this, result -> {
-                        ClipData clipData = ClipData.newPlainText("label", result);
-                        clipboardManager.setPrimaryClip(clipData);
-                        ToastManager.getInstance().showLongTosat(getString(R.string.copy_text));
-                        db.collection(CommonData.COLLECTION_USERS).document(CommonData.getInstance().getUserDocId()).update("point", CommonData.getInstance().getCurUser().getPoint()-et_chat.getText().toString().trim().length());
-                    }).execute(new String[]{et_chat.getText().toString().trim(), CommonData.getInstance().getmTransferTargetTxt()});
-                }else{
-                    ToastManager.getInstance().showLongTosat(getString(R.string.msg_missing_points));
-                }
+        mChatView = new ChatView(this, new ChatView.EventListener() {
+            @Override
+            public void requestText(String text) {
+                new GoogleTranslatorTask(TranslationService.this, result -> {
+                    ClipData clipData = ClipData.newPlainText("label", result);
+                    clipboardManager.setPrimaryClip(clipData);
+                    ToastManager.getInstance().showLongTosat(getString(R.string.copy_text));
+                    db.collection(CommonData.COLLECTION_USERS).document(CommonData.getInstance().getUserDocId()).update("point", CommonData.getInstance().getCurUser().getPoint()-text.length());
 
-                mChatView.setVisibility(View.GONE);
-                inputMethodManager.hideSoftInputFromInputMethod(et_chat.getWindowToken(), 0);
+                    inputMethodManager.hideSoftInputFromWindow(mChatView.getEt_chat().getWindowToken(), 0);
+                    mChatView.setVisibility(View.GONE);
+                }).execute(new String[]{text, CommonData.getInstance().getmTransferTargetTxt()});
             }
-            return false;
-        });
 
-        btn_close_chat.setOnClickListener(this);
+            @Override
+            public void onClose() {
+                mChatView.setVisibility(View.GONE);
+                inputMethodManager.hideSoftInputFromWindow(mChatView.getEt_chat().getWindowToken(), 0);
+            }
+        }){
+            @Override
+            public boolean dispatchKeyEvent(KeyEvent event) {
+                if (isChatViewShow && event.getKeyCode()==KeyEvent.KEYCODE_BACK) {
+                    isChatViewShow = false;
+                    mChatView.setVisibility(View.GONE);
+                    inputMethodManager.hideSoftInputFromWindow(mChatView.getEt_chat().getWindowToken(), 0);
+                    return true;
+                }
+                return super.dispatchKeyEvent(event);
+            }
+        };
 
         mChatView.setVisibility(View.GONE);
 
-        mParamsChat = new WindowManager.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT,
+        mParamsChat = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,//항상 최 상위. 터치 이벤트 받을 수 있음.
-                0,  //포커스를 가지지 않음
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                LAYOUT_FLAG,//항상 최 상위. 터치 이벤트 받을 수 있음.
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,  //포커스를 가지지 않음
                 PixelFormat.TRANSLUCENT);
         mParamsChat.gravity = Gravity.TOP | Gravity.CENTER;                   //왼쪽 상단에 위치하게 함.
         mWindowManager.addView(mChatView, mParamsChat);      //윈도우에 뷰 넣기. permission 필요.
@@ -322,12 +361,13 @@ public class TranslationService extends Service implements View.OnClickListener 
                 break;
             case R.id.btn_chat:
                 mChatView.setVisibility(View.VISIBLE);
-                et_chat.setText("");
-                inputMethodManager.showSoftInput(et_chat, InputMethodManager.SHOW_FORCED);
+                isChatViewShow = true;
+                mChatView.getEt_chat().setText("");
+                mChatView.postDelayed(() -> inputMethodManager.showSoftInput(mChatView.getEt_chat(), InputMethodManager.SHOW_FORCED), 300L);
                 break;
             case R.id.btn_close_chat:
                 mChatView.setVisibility(View.GONE);
-                inputMethodManager.hideSoftInputFromWindow(et_chat.getWindowToken(), 0);
+                inputMethodManager.hideSoftInputFromWindow(mChatView.getEt_chat().getWindowToken(), 0);
                 break;
             case R.id.tv_text_box:
                 mTextView.setVisibility(View.GONE);
@@ -388,6 +428,8 @@ public class TranslationService extends Service implements View.OnClickListener 
             mCanvasView.setVisibility(View.VISIBLE);
             mCanvasView.invalidate();
             mCanvasView.requestLayout();
+            ToastManager.getInstance().showShortTosat(getString(R.string.msg_help_service));
+            isCansvasViewShow = true;
         }
     };
 
@@ -432,7 +474,7 @@ public class TranslationService extends Service implements View.OnClickListener 
     private LayoutInflater inflater;
     private View mActionBtnView;
     private View mTextView;
-    private View mChatView;
+    private ChatView mChatView;
     private DrawTouchView mCanvasView;
 
     TextView tv_text_box;
@@ -443,9 +485,6 @@ public class TranslationService extends Service implements View.OnClickListener 
     ImageButton btn_last_text;
     ImageButton btn_arrow;
     ImageButton btn_chat;
-
-    EditText et_chat;
-    ImageButton btn_close_chat;
 
     TextView tv_point;
 }

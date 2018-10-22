@@ -76,4 +76,6 @@
     <string name="unknown_error">알 수 없는 오류</string>
 
     <string name="fail_translation">데이터가 없거나 번역에 실패했습니다.</string>
+    <string name="title_activity_capture">CaptureActivity</string>
+    <string name="hello_world">Hello world!</string>
 </resources>

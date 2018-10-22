@@ -22,8 +22,6 @@ public class CommonData {
     public static final String FIELD_EMAIL = "email";
 
 
-    private String imgPath;
-    private boolean isStarted = false;
     private boolean isServiceRun = false;
     private String mSourceLang = "zh";
     private String mTargetLang = "ko";
@@ -32,8 +30,6 @@ public class CommonData {
 
     private String mTransferTargetImg = "img";
     private String mTransferTargetTxt = "txt";
-
-
 
     /**
      * CommonData 인스턴스 리턴
@@ -72,22 +68,6 @@ public class CommonData {
             }
         }
         return _instance;
-    }
-
-    public String getImgPath() {
-        return imgPath;
-    }
-
-    public void setImgPath(String imgPath) {
-        this.imgPath = imgPath;
-    }
-
-    public boolean isStarted() {
-        return isStarted;
-    }
-
-    public void setStarted(boolean started) {
-        isStarted = started;
     }
 
     public String getmSourceLang() {
@@ -207,10 +187,6 @@ public class CommonData {
     // 번역 결과 언어
     public void setTargetLang(int targetLang){setSharedPreferenceData("mTargetLang", targetLang);}
     public int getTargetLang(){return getSharedPreference().getInt("mTargetLang",4);}
-
-    // 화면 방향
-    public void setOrientation(boolean orientation){setSharedPreferenceData("mOrientation", orientation);}
-    public boolean getOrientation(){return getSharedPreference().getBoolean("mOrientation",false);}
 
     // 원문 표시 여부
     public void setIsShowOriginal(boolean isShowOriginal){setSharedPreferenceData("isShowOriginal", isShowOriginal);}
