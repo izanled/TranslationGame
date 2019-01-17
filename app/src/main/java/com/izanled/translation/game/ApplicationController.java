@@ -1,6 +1,7 @@
 package com.izanled.translation.game;
 
-import android.app.Application;
+
+import android.support.multidex.MultiDexApplication;
 
 import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.ads.MobileAds;
@@ -13,7 +14,7 @@ import com.izanled.translation.game.utils.ToastManager;
 
 import io.fabric.sdk.android.Fabric;
 
-public class ApplicationController extends Application {
+public class ApplicationController extends MultiDexApplication {
     @Override
     public void onCreate() {
         super.onCreate();

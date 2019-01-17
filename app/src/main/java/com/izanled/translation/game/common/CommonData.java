@@ -20,7 +20,10 @@ public class CommonData {
 
     public static final String COLLECTION_USERS = "users";
     public static final String FIELD_EMAIL = "email";
+    public static final String FIELD_POINT = "point";
 
+    public static final int CONSUMPTION_POINTS_OCR = 20;
+    public static final int REWOAD_POINTS = 150;
 
     private boolean isServiceRun = false;
     private String mSourceLang = "zh";
@@ -188,7 +191,27 @@ public class CommonData {
     public void setTargetLang(int targetLang){setSharedPreferenceData("mTargetLang", targetLang);}
     public int getTargetLang(){return getSharedPreference().getInt("mTargetLang",4);}
 
+    // 번역 도구 선택
+    public void setTransApi(int transApi){setSharedPreferenceData("mTransApi", transApi);}
+    public int getTransApi(){return getSharedPreference().getInt("mTransApi",0);}
+
     // 원문 표시 여부
     public void setIsShowOriginal(boolean isShowOriginal){setSharedPreferenceData("isShowOriginal", isShowOriginal);}
     public boolean getIsShowOriginal(){return getSharedPreference().getBoolean("isShowOriginal",false);}
+
+    // 이미지 사이즈
+    public void setImgSize(boolean isImgSizeBig){setSharedPreferenceData("mImgSize", isImgSizeBig);}
+    public boolean getImgSize(){return getSharedPreference().getBoolean("mImgSize",true);}
+
+    // 파파고 클라이언트 아이디
+    public void setClientId(String clientId){setSharedPreferenceData("mClientId", clientId);}
+    public String getClientId(){return getSharedPreference().getString("mClientId","");}
+
+    // 파파고 시크릿 아이디
+    public void setSecretId(String secretId){setSharedPreferenceData("mSecretId", secretId);}
+    public String getSecretId(){return getSharedPreference().getString("mSecretId","");}
+
+    // 공지 봤는지 유무
+    public void setIsShowNotice(boolean isShowNotice){setSharedPreferenceData("mIsShowNotice", isShowNotice);}
+    public boolean IsShowNotice(){return getSharedPreference().getBoolean("mIsShowNotice",false);}
 }

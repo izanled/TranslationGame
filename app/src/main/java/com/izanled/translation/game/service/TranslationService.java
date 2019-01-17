@@ -6,6 +6,7 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.os.Build;
@@ -21,9 +22,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
-import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
@@ -167,7 +166,9 @@ public class TranslationService extends Service implements View.OnClickListener 
                             mActionBtnView.setVisibility(View.GONE);
 
                             //CommonData.getInstance().setStarted(true);
-                            startActivity(new Intent(this, CaptureActivity.class));
+                            Intent intent = new Intent(this, CaptureActivity.class);
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(intent);
 
                             mActionBtnView.postDelayed(() -> {
                                 mActionBtnView.setVisibility(View.VISIBLE);
@@ -202,21 +203,7 @@ public class TranslationService extends Service implements View.OnClickListener 
      * 사각형 그리기 뷰 세팅
      */
     public void initCanvasView(){
-        mCanvasView = new DrawTouchView(this){
-            @Override
-            public boolean dispatchKeyEvent(KeyEvent event) {
-                if (isCansvasViewShow && event.getKeyCode()==KeyEvent.KEYCODE_BACK) {
-                    isCansvasViewShow = false;
-                    btn_capture.setVisibility(View.GONE);
-                    btn_close.setVisibility(View.GONE);
-                    mCanvasView.setVisibility(View.GONE);
-                    tv_point.setVisibility(View.GONE);
-                    Log.v("Back", "Back Key");
-                    return true;
-                }
-                return super.dispatchKeyEvent(event);
-            }
-        };
+        mCanvasView = new DrawTouchView(this, () -> mCanvasView.setVisibility(View.GONE));
         mCanvasView.setBackgroundColor(getColor(R.color.alaphGray));
 
         mCanvasView.setVisibility(View.GONE);
@@ -226,7 +213,8 @@ public class TranslationService extends Service implements View.OnClickListener 
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT,
                 LAYOUT_FLAG,//항상 최 상위. 터치 이벤트 받을 수 있음.
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,  //포커스를 가지지 않음
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,  //포커스를 가지지 않음 소프트 키 안생김. - 게임이 안멈춤
+                /*WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,  //포커스를 가지지 않음*/
                 PixelFormat.TRANSLUCENT);                                        //투명
         mWindowManager.addView(mCanvasView, mParamsCanvas);      //윈도우에 뷰 넣기. permission 필요.
     }
@@ -384,6 +372,7 @@ public class TranslationService extends Service implements View.OnClickListener 
             if(mChatView != null) mWindowManager.removeView(mChatView);
             if(tv_point != null)    mWindowManager.removeView(tv_point);
         }
+        CommonData.getInstance().setServiceRun(false);
         super.onDestroy();
     }
 
@@ -438,10 +427,23 @@ public class TranslationService extends Service implements View.OnClickListener 
      */
     @Subscribe
     public void onEvent(BitmapData data){
-        if(mCanvasView.dump != null) mCanvasView.dump.recycle();
+        if(mCanvasView.screenShotBitmap != null) {
+            mCanvasView.screenShotBitmap.recycle();
+            mCanvasView.screenShotBitmap = null;
+        }
 
-        mCanvasView.dump = data.getBitmap();
-        mImgHandler.sendEmptyMessage(1);
+        if(CommonData.getInstance().getImgSize()){
+            mCanvasView.screenShotBitmap = data.getBitmap();
+            mImgHandler.sendEmptyMessage(1);
+        }else{
+            int width = (int)(data.getBitmap().getWidth()/1.5d);
+            int height = (int)(data.getBitmap().getHeight()/1.5d);
+
+            Bitmap resize = Bitmap.createScaledBitmap(data.getBitmap(), width, height, true);
+
+            mCanvasView.screenShotBitmap = resize;
+            mImgHandler.sendEmptyMessage(1);
+        }
     }
 
     /**

@@ -8,8 +8,16 @@
         <item>@string/ko</item>
     </string-array>
 
-    <string-array name="arrOrientation">
-        <item>@string/portrait</item>
-        <item>@string/landscape</item>
+    <string-array name="arrApi">
+        <item>@string/google</item>
+        <item>@string/papago</item>
+    </string-array>
+
+    <string-array name="arrProductId">
+        <item>p1500</item>
+        <item>p3300</item>
+        <item>p5000</item>
+        <item>p8500</item>
+        <item>p17000</item>
     </string-array>
 </resources>

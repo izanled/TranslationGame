@@ -27,4 +27,5 @@ public class UserData extends DocId {
     public void setPoint(int point) {
         this.point = point;
     }
+
 }

@@ -66,10 +66,21 @@
             </LinearLayout>
 
             <Button
+                android:id="@+id/btn_purchase"
+                android:layout_width="match_parent"
+                android:layout_height="35dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/selector_btn"
+                android:text="@string/point_purchase"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <Button
                 android:id="@+id/btn_reward"
                 android:layout_width="match_parent"
                 android:layout_height="30dp"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="20dp"
                 android:background="@drawable/selector_btn"
                 android:text="@string/get_rewoad"
                 android:textColor="@android:color/white" />
@@ -104,6 +115,71 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
+                android:text="@string/sel_trans_api" />
+
+            <Spinner
+                android:id="@+id/spinner_trans_api"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:entries="@array/arrApi" />
+
+
+            <LinearLayout
+                android:id="@+id/lay_papago_key"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:layout_weight="1"
+                    android:text="@string/key_client" />
+
+                <EditText
+                    android:id="@+id/ed_client"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ems="100"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:layout_weight="1"
+                    android:text="@string/key_secret" />
+
+                <EditText
+                    android:id="@+id/ed_secret"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ems="100"/>
+
+                <Button
+                    android:id="@+id/btn_help_papago"
+                    android:layout_width="match_parent"
+                    android:layout_height="30dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/selector_btn"
+                    android:text="@string/help_papago"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp"
+                    tools:layout_editor_absoluteX="148dp"
+                    tools:layout_editor_absoluteY="61dp" />
+
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
                 android:layout_weight="1"
                 android:text="@string/show_original" />
 
@@ -118,12 +194,29 @@
                 android:textSize="16sp" />
 
             <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:layout_weight="1"
+                android:text="@string/img_size" />
+
+            <Switch
+                android:id="@+id/sw_img_size"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:layout_marginTop="10dp"
+                android:layout_weight="1"
+                android:text=""
+                android:textSize="16sp" />
+
+            <TextView
                 android:id="@+id/tv_version"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
                 android:text="@string/app_version"
-                android:textColor="@color/browser_actions_text_color" />
+                 />
 
             <Button
                 android:id="@+id/btn_help"

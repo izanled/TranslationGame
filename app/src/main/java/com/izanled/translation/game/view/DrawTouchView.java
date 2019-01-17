@@ -6,8 +6,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.support.annotation.Nullable;
-import android.util.AttributeSet;
+import android.os.SystemClock;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -20,6 +20,7 @@ import com.izanled.translation.game.R;
 import com.izanled.translation.game.common.CommonData;
 import com.izanled.translation.game.eventbus.LastTextData;
 import com.izanled.translation.game.utils.GoogleTranslatorTask;
+import com.izanled.translation.game.utils.NaverNMTTranslatorTask;
 import com.izanled.translation.game.utils.ToastManager;
 
 import org.greenrobot.eventbus.EventBus;
@@ -31,32 +32,21 @@ public class DrawTouchView extends View {
 
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     Context mContext;
+    EventListener eventListener;
 
     private float initL, initT, initB, initR;
     private boolean drawing = false;
 
-    public Bitmap dump = null;
+    public Bitmap screenShotBitmap = null;
 
     boolean GaRoReverse = false;
     boolean SeRoReverse = false;
 
-    public DrawTouchView(Context context) {
+    long myBaseTime;
+
+    public DrawTouchView(Context context,  EventListener eventListener) {
         super(context);
-        init(context);
-    }
-
-    public DrawTouchView(Context context, @Nullable AttributeSet attrs) {
-        super(context, attrs);
-        init(context);
-    }
-
-    public DrawTouchView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        init(context);
-    }
-
-    public DrawTouchView(Context context, @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
+        this.eventListener = eventListener;
         init(context);
     }
 
@@ -75,10 +65,14 @@ public class DrawTouchView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (dump != null){
-            Rect rect = new Rect(0,0, dump.getWidth(), dump.getHeight());
-            canvas.drawBitmap(dump, null, rect, null);
-            canvas.save();
+        if (screenShotBitmap != null){
+            try {
+                Rect rect = new Rect(0,0, screenShotBitmap.getWidth(), screenShotBitmap.getHeight());
+                canvas.drawBitmap(screenShotBitmap, null, rect, null);
+                canvas.save();
+            }catch (Exception e){
+                ToastManager.getInstance().showLongTosat(mContext.getString(R.string.error_capture));
+            }
         }
 
         if (drawing) {
@@ -113,7 +107,7 @@ public class DrawTouchView extends View {
     public void getCropArea(){
         if(drawing){
             try {
-                Bitmap output = Bitmap.createBitmap(dump, Math.round(initL), Math.round(initT), Math.round(initR-initL), Math.round(initB-initT));
+                Bitmap output = Bitmap.createBitmap(screenShotBitmap, Math.round(initL), Math.round(initT), Math.round(initR-initL), Math.round(initB-initT));
                 processImage(output);
             }catch (Exception e){
                 e.printStackTrace();
@@ -128,51 +122,77 @@ public class DrawTouchView extends View {
     {
         FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(bitmap);
 
-        FirebaseVisionCloudTextRecognizerOptions options = new FirebaseVisionCloudTextRecognizerOptions.Builder().setLanguageHints(Arrays.asList("ca", "hi")).build();
+        FirebaseVisionCloudTextRecognizerOptions options = new FirebaseVisionCloudTextRecognizerOptions.Builder().setLanguageHints(Arrays.asList("zh", "en","ja")).build();
         FirebaseVisionTextRecognizer textRecognizer = FirebaseVision.getInstance().getCloudTextRecognizer(options);
 
         textRecognizer.processImage(image).addOnSuccessListener(result -> {
-                    final String original = result.getText();
+                    final String original = result.getText().replaceAll("(\r\n|\r|\n|\n\r)", " ").trim();
 
                     if(original.length() > 0){
 
-                        if(original.trim().length() <= CommonData.getInstance().getCurUser().getPoint()){
+                        if(CommonData.getInstance().getTransApi() == 0){
+                            if(original.length()+CommonData.CONSUMPTION_POINTS_OCR <= CommonData.getInstance().getCurUser().getPoint()){
 
-                            new GoogleTranslatorTask(mContext, result1 -> {
+                                new GoogleTranslatorTask(mContext, result1 -> {
+                                    if(CommonData.getInstance().getIsShowOriginal()){
+                                        String lastStr = mContext.getString(R.string.original) + " : " + original + "\n" + mContext.getString(R.string.translation) + " : " + result1;
+
+                                        LastTextData lastTextData = new LastTextData(lastStr);
+
+                                        EventBus.getDefault().post(lastTextData);
+                                    }else{
+                                        LastTextData lastTextData = new LastTextData(result1);
+
+                                        EventBus.getDefault().post(lastTextData);
+                                    }
+
+                                    FirebaseFirestore.getInstance().collection(CommonData.COLLECTION_USERS).document(CommonData.getInstance().getUserDocId())
+                                            .update(CommonData.FIELD_POINT, CommonData.getInstance().getCurUser().getPoint()-(original.trim().length()+CommonData.CONSUMPTION_POINTS_OCR));
+
+                                }).execute(new String[]{original, CommonData.getInstance().getmTransferTargetImg()});
+                            }else{
+                                ToastManager.getInstance().showLongTosat(mContext.getString(R.string.msg_missing_points).replace("[point]", String.valueOf(CommonData.CONSUMPTION_POINTS_OCR)));
+                            }
+                        }else{
+                            if(CommonData.CONSUMPTION_POINTS_OCR <= CommonData.getInstance().getCurUser().getPoint()){
+                                new NaverNMTTranslatorTask(mContext, result12 -> {
+                                    if(CommonData.getInstance().getIsShowOriginal()){
+                                        String lastStr = mContext.getString(R.string.original) + " : " + original + "\n" + mContext.getString(R.string.translation) + " : " + result12;
+
+                                        LastTextData lastTextData = new LastTextData(lastStr);
+
+                                        EventBus.getDefault().post(lastTextData);
+                                    }else{
+                                        LastTextData lastTextData = new LastTextData(result12);
+
+                                        EventBus.getDefault().post(lastTextData);
+                                    }
+                                    FirebaseFirestore.getInstance().collection(CommonData.COLLECTION_USERS).document(CommonData.getInstance().getUserDocId())
+                                            .update(CommonData.FIELD_POINT, CommonData.getInstance().getCurUser().getPoint()-CommonData.CONSUMPTION_POINTS_OCR);
+
+                                }).execute(new String[]{original, CommonData.getInstance().getmTransferTargetImg()});
+
+                             /*new NaverSMTTranslatorTask(mContext, result12 -> {
                                 if(CommonData.getInstance().getIsShowOriginal()){
-                                    String lastStr = mContext.getString(R.string.original) + " : " + original + "\n" + mContext.getString(R.string.translation) + " : " + result1;
+                                    String lastStr = mContext.getString(R.string.original) + " : " + original + "\n" + mContext.getString(R.string.translation) + " : " + result12;
 
                                     LastTextData lastTextData = new LastTextData(lastStr);
 
                                     EventBus.getDefault().post(lastTextData);
                                 }else{
-                                    LastTextData lastTextData = new LastTextData(result1);
+                                    LastTextData lastTextData = new LastTextData(result12);
 
                                     EventBus.getDefault().post(lastTextData);
                                 }
 
                                 FirebaseFirestore.getInstance().collection(CommonData.COLLECTION_USERS).document(CommonData.getInstance().getUserDocId()).update("point", CommonData.getInstance().getCurUser().getPoint()-original.trim().length());
-
-                            }).execute(new String[]{original, CommonData.getInstance().getmTransferTargetImg()});
-
-                        }else{
-                            ToastManager.getInstance().showLongTosat(mContext.getString(R.string.msg_missing_points));
+                            }).execute(new String[]{original, CommonData.getInstance().getmTransferTargetImg()});*/
+                            }else{
+                                ToastManager.getInstance().showLongTosat(mContext.getString(R.string.msg_missing_points_papago).replace("[point]", String.valueOf(CommonData.CONSUMPTION_POINTS_OCR)));
+                            }
                         }
 
-                        new GoogleTranslatorTask(mContext, result1 -> {
-                            if(CommonData.getInstance().getIsShowOriginal()){
-                                String lastStr = mContext.getString(R.string.original) + " : " + original + "\n" + mContext.getString(R.string.translation) + " : " + result1;
 
-                                LastTextData lastTextData = new LastTextData(lastStr);
-
-                                EventBus.getDefault().post(lastTextData);
-                            }else{
-                                LastTextData lastTextData = new LastTextData(result1);
-
-                                EventBus.getDefault().post(lastTextData);
-                            }
-
-                        }).execute(new String[]{original, CommonData.getInstance().getmTransferTargetImg()});
                     }else{
                         ToastManager.getInstance().showLongTosat(mContext.getString(R.string.dont_find_text));
                     }
@@ -205,8 +225,26 @@ public class DrawTouchView extends View {
             initB = event.getY();
             //Log.d("AAAAAAAAAA", "initL: " + initL + "initT: " + initT);
             drawing = true;
+
+            myBaseTime = SystemClock.elapsedRealtime();
         } else if (action == MotionEvent.ACTION_UP) {
             //drawing = false;
+            int x_up = (int)(event.getX() - initL);    //이동한 거리
+            int y_up = (int)(event.getY() - initT);    //이동한 거리
+            Log.d(TAG, "X 축 이동 거리 = " + x_up);
+            Log.d(TAG, "Y 축 이동 거리 = " + y_up);
+            if(Math.abs(x_up) < 10 && Math.abs(y_up)  < 10){
+                long now = SystemClock.elapsedRealtime(); //애플리케이션이 실행되고나서 실제로 경과된 시간(??)^^;
+                long outTime = now - myBaseTime;
+
+                Log.d(TAG, "outTime = " + outTime);
+
+                if(outTime >= 1000L){
+                    eventListener.onClose();
+                    return false;
+                }
+            }
+
             if(initL > initR){
                 float tump = initR;
                 initR = initL;
@@ -226,5 +264,9 @@ public class DrawTouchView extends View {
     @Override
     public boolean performClick() {
         return super.performClick();
+    }
+
+    public interface EventListener{
+        void onClose();
     }
 }

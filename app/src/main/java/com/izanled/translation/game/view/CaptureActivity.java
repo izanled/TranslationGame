@@ -107,6 +107,7 @@ public class CaptureActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         stopProjection();
+        Log.d(TAG, "onDestroy");
     }
 
     private class ImageAvailableListener implements ImageReader.OnImageAvailableListener {
@@ -137,10 +138,10 @@ public class CaptureActivity extends AppCompatActivity {
                     EventBus.getDefault().post(bitmapData);
 
                     sMediaProjection.stop();
-                    finish();
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+                finish();
             } finally {
                 if (fos != null) {
                     try {
@@ -157,7 +158,10 @@ public class CaptureActivity extends AppCompatActivity {
                 if (image != null) {
                     image.close();
                 }
+                Log.d(TAG, "액티비티 종료");
+                finish();
             }
+            finish();
         }
     }
 
@@ -240,6 +244,7 @@ public class CaptureActivity extends AppCompatActivity {
             }
         }catch (Exception e){
             e.printStackTrace();
+            finish();
         }
     }
 
@@ -255,6 +260,8 @@ public class CaptureActivity extends AppCompatActivity {
             }
         });
     }
+
+
 
     /****************************************** Factoring Virtual Display creation ****************/
     private void createVirtualDisplay() {
